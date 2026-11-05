@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Jelajah Lokal: Rekomendasi Tempat per Daerah</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&display=swap">
+<style>
+:root{--bg:#f2f5f4;--fg:#13221f;--mut:#5d6f6b;--card:#fff;--line:#d9e2df;--ac:#0b5d56;--acfg:#fff;
+--c-wisata:#2e7d4f;--c-kopi:#9a5b1f;--c-makan:#c23a32;--c-nongkrong:#6a4fc2;--c-oleh:#a3307f;--c-jajan:#0a7396;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1816;--fg:#e6efed;--mut:#98ada8;--card:#17231f;--line:#2a3b36;--ac:#4fd1c0;--acfg:#06231f;
+--c-wisata:#58c487;--c-kopi:#e0a064;--c-makan:#f0736b;--c-nongkrong:#a592f0;--c-oleh:#f08acb;--c-jajan:#5fc3e8;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0f1816;--fg:#e6efed;--mut:#98ada8;--card:#17231f;--line:#2a3b36;--ac:#4fd1c0;--acfg:#06231f;
+--c-wisata:#58c487;--c-kopi:#e0a064;--c-makan:#f0736b;--c-nongkrong:#a592f0;--c-oleh:#f08acb;--c-jajan:#5fc3e8;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:760px;margin:0 auto;padding:40px 20px 64px}
+h1{font:800 clamp(2rem,6vw,3rem)/1.05 "Bricolage Grotesque",system-ui,sans-serif;margin:0 0 8px;letter-spacing:-.02em}
+.sub{color:var(--mut);margin:0 0 24px;max-width:52ch}
+.search{display:flex;gap:8px}
+input{flex:1;min-width:0;font:inherit;padding:14px 16px;border:2px solid var(--line);border-radius:12px;background:var(--card);color:var(--fg)}
+input:focus-visible,button:focus-visible,a:focus-visible{outline:3px solid var(--ac);outline-offset:2px}
+.go{font:inherit;font-weight:600;padding:0 22px;border:0;border-radius:12px;background:var(--ac);color:var(--acfg);cursor:pointer}
+.try{margin:12px 0 0;color:var(--mut);font-size:.9rem}
+.try button{font:inherit;color:var(--ac);background:none;border:0;padding:2px 6px;cursor:pointer;text-decoration:underline}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:28px 0 8px}
+.chip{font:inherit;font-size:.92rem;padding:7px 14px;border:1.5px solid var(--line);border-radius:999px;background:transparent;color:var(--fg);cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.note{background:var(--card);border:1px dashed var(--line);border-radius:12px;padding:12px 16px;color:var(--mut);font-size:.92rem;margin:16px 0}
+h2{font:600 1.15rem "Bricolage Grotesque",system-ui,sans-serif;margin:24px 0 4px}
+.item{display:grid;grid-template-columns:6px 1fr;gap:16px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 16px 16px 0;margin-top:12px;overflow:hidden}
+.bar{background:var(--k);margin:-16px 0 -16px 0}
+.item h3{margin:0;font-size:1.05rem}
+.tag{display:inline-block;font-size:.8rem;font-weight:600;color:var(--k);margin-bottom:2px}
+.hot{font-size:.75rem;font-weight:600;color:var(--k);border:1.5px solid var(--k);border-radius:999px;padding:0 8px;margin-left:8px}
+.item p{margin:4px 0 12px;color:var(--mut);font-size:.95rem}
+.links{display:flex;flex-wrap:wrap;gap:8px}
+.links a{font-size:.88rem;font-weight:600;text-decoration:none;padding:7px 12px;border-radius:8px;border:1.5px solid var(--line);color:var(--fg)}
+.links a.v{background:var(--k);border-color:var(--k);color:#fff}
+.empty{color:var(--mut);padding:24px 0}
+@media (max-width:480px){.go{padding:0 16px}}
+</style>
+</head>
+<body>
+<main>
+  <h1>Mau jalan-jalan ke mana?</h1>
+  <p class="sub">Ketik nama daerah, lalu pilih kategori. Setiap tempat punya tautan video dan peta.</p>
+  <div class="search">
+    <input id="q" type="search" placeholder="Contoh: Bandung" aria-label="Nama daerah" autocomplete="off" list="kota">
+    <datalist id="kota"></datalist>
+    <button class="go" id="go">Cari</button>
+  </div>
+  <p class="try" id="try"></p>
+  <div id="out"></div>
+</main>
+<script>
+const CATS={wisata:"Wisata",kopi:"Tempat kopi",makan:"Tempat makan",nongkrong:"Tempat nongkrong",oleh:"Oleh-oleh",jajan:"Jajanan"};
+const DATA={
+Bandung:{
+ wisata:[["Tangkuban Parahu","Gunung berapi dengan kawah yang bisa dilihat dari dekat di Lembang."],["Kawah Putih","Danau kawah berwarna hijau toska di dataran tinggi Ciwidey."],['Gedung Sate','Gedung pemerintahan ikonis dengan ornamen di puncak menyerupai tusuk sate.'],['Museum Geologi','Museum dengan koleksi fosil, batuan, dan sejarah kebumian Indonesia.'],['Farmhouse Lembang','Taman bergaya Eropa dengan spot foto dan peternakan kecil di Lembang.']],
+ kopi:[["Warung Kopi Purnama","Kedai kopi lama dengan suasana sederhana dan kopi tubruk khas."],["Kopi Aroma","Penyangrai kopi legendaris di pusat kota, terkenal dengan aroma sangrainya."]],
+ makan:[["Batagor Kingsley","Batagor goreng renyah dengan bumbu kacang, oleh-oleh wajib kuliner Bandung."],["Kupat Tahu Gempol","Kupat tahu dengan bumbu kacang, sarapan khas Bandung."]],
+ nongkrong:[["Jalan Braga","Kawasan bangunan tua dengan kafe dan jalan kaki yang ramai di malam hari."],["Alun-Alun Bandung","Ruang terbuka dengan rumput sintetis di dekat Masjid Raya, cocok untuk santai."]],
+ oleh:[['Kartika Sari','Toko oleh-oleh khas Bandung dengan bolu, roti, dan kue kering.'],['Amanda Brownies','Brownies kukus yang jadi oleh-oleh andalan dari Bandung.']],
+ jajan:[['Bakso Cuanki Serayu','Bakso kuah dengan tahu dan siomay, jajanan hangat khas Bandung.'],['Cendol Elizabeth','Es cendol legendaris di Bandung.']]},
+Yogyakarta:{
+ wisata:[["Candi Prambanan","Kompleks candi Hindu abad ke-9 yang megah."],["Keraton Yogyakarta","Istana sultan yang masih berfungsi, dengan museum dan pertunjukan budaya."],['Taman Sari','Bekas taman istana dengan kolam pemandian dan lorong bawah tanah.'],['Candi Ratu Boko','Situs di atas bukit dengan gerbang megah dan pemandangan matahari terbenam.'],['Pantai Parangtritis','Pantai selatan berombak besar yang jadi tujuan akhir pekan warga Yogyakarta.']],
+ kopi:[["Klinik Kopi","Kedai kopi spesialti dengan barista yang suka menjelaskan biji kopi."],["Kopi Klotok","Kopi dan masakan rumahan di tengah suasana desa dekat Pakem."]],
+ makan:[["Gudeg Yu Djum","Gudeg manis khas Yogyakarta yang sudah puluhan tahun melegenda."],["Sate Klathak Pak Pong","Sate kambing bertusuk jeruji besi dengan bumbu garam."]],
+ nongkrong:[["Malioboro","Jalan utama kota dengan pedagang kaki lima dan musisi jalanan."],["Alun-Alun Kidul","Tempat main sepeda lampu dan duduk lesehan di malam hari."]],
+ oleh:[['Bakpia Pathok 25','Bakpia khas kampung Pathok dengan isi kacang hijau dan rasa lain.'],['Dagadu Djokdja','Kaos dan suvenir dengan plesetan khas Yogyakarta.']],
+ jajan:[['Angkringan Lik Man','Angkringan dekat Stasiun Tugu dengan kopi joss dan nasi kucing.'],['Jadah Tempe Mbah Carik','Jajanan khas Kaliurang: jadah ketan dengan tempe bacem.']]},
+Bali:{
+ wisata:[["Tanah Lot","Pura di atas batu karang laut, terkenal untuk melihat matahari terbenam."],["Tegallalang Rice Terrace","Sawah terasering hijau di dekat Ubud."],['Pura Luhur Uluwatu','Pura di tebing tepi laut dengan pertunjukan tari kecak saat senja.'],['Ubud Monkey Forest','Hutan kecil berisi ratusan monyet dan pura-pura tua.'],['Pantai Kelingking','Tebing berbentuk dinosaurus di Nusa Penida, dicapai dengan kapal.']],
+ kopi:[["Seniman Coffee","Kedai kopi di Ubud dengan konsep kopi lokal dan ruang kerja santai."],["Revolver Espresso","Kedai kopi populer di Seminyak yang tersembunyi di gang kecil."]],
+ makan:[["Warung Babi Guling Ibu Oka","Babi guling khas Ubud yang sering jadi tujuan wisata kuliner."],["Warung Mak Beng","Sup ikan sederhana di Sanur yang sudah lama dikenal."]],
+ nongkrong:[["Potato Head Beach Club","Klub pantai di Seminyak dengan musik, kolam, dan pemandangan sore."],["Pantai Seminyak","Pantai berpasir luas dengan deretan kafe di tepinya."]],
+ oleh:[['Pusat Oleh-oleh Krisna','Toko oleh-oleh besar dengan kaos, camilan, dan kerajinan.'],['Joger','Toko kaos bertulisan jenaka, ikon oleh-oleh Bali.']],
+ jajan:[['Pasar Malam Gianyar','Pasar malam dengan banyak jajanan dan makanan khas Bali.']]},
+Jakarta:{
+ wisata:[["Monas","Tugu nasional dengan museum dan pemandangan kota dari puncaknya."],["Kota Tua Jakarta","Kawasan bangunan kolonial dengan museum, sepeda ontel, dan kafe."],['Museum Nasional','Museum besar dengan koleksi arkeologi dan budaya dari seluruh Nusantara.'],['Masjid Istiqlal','Masjid terbesar di Asia Tenggara, bersebelahan dengan Katedral.'],['Taman Mini Indonesia Indah','Taman budaya dengan anjungan rumah adat dari berbagai provinsi.']],
+ kopi:[["Kopi Tuku","Kopi susu gula aren yang menjadi pelopor kopi kekinian Jakarta."],["Anomali Coffee","Jaringan kedai kopi dengan biji kopi single origin dari berbagai daerah."]],
+ makan:[["Gado-Gado Boplo","Gado-gado Betawi dengan bumbu kacang yang kental."],["Es Krim Ragusa","Es krim bergaya Italia klasik di Gambir, sudah ada sejak 1932."]],
+ nongkrong:[["Pasar Santa","Pasar yang berubah jadi tempat kumpul anak muda dengan kedai kopi dan makanan."],["Blok M","Kawasan hiburan dan jajan yang ramai sejak lama."]],
+ oleh:[['Pasar Baru','Kawasan belanja tua dengan toko kain, suvenir, dan kue.'],['Sarinah','Pusat belanja dengan kerajinan dan produk Indonesia di Jalan Thamrin.']],
+ jajan:[['Es Teler 77','Es teler dan hidangan ringan dari jaringan kuliner yang dikenal di Jakarta.'],['Kerak Telor Kota Tua','Omelet beras ketan khas Betawi yang dijual di kawasan Kota Tua.']]},
+Surabaya:{
+ wisata:[['House of Sampoerna','Museum rokok di bangunan kolonial, dengan pemandangan dari lantai atas.'],['Jembatan Suroboyo','Jembatan pejalan kaki di pantai timur dengan pemandangan senja.'],['Tugu Pahlawan','Monumen perjuangan 10 November dan museum di sekitarnya.'],['Masjid Nasional Al-Akbar','Masjid berkubah besar dengan menara yang bisa didaki untuk melihat kota.'],['Monumen Kapal Selam','Kapal selam asli yang diubah jadi museum dan bisa dimasuki.'],['Kenjeran Park','Kawasan pantai dengan kelenteng dan taman rekreasi.']],
+ makan:[['Rawon Setan','Rawon berkuah hitam pekat yang buka sampai larut malam.'],['Lontong Balap Pak Gendut','Lontong dengan tauge, tahu, dan lentho, hidangan khas Surabaya.']],
+ nongkrong:[['Taman Bungkul','Taman kota tempat warga berolahraga dan berkumpul.'],['Jalan Tunjungan','Jalan bersejarah dengan bangunan tua dan kafe.']],
+ oleh:[['Bhek','Toko oleh-oleh dengan camilan khas Jawa Timur.']],
+ jajan:[['Zangrandi Ice Cream','Kedai es krim klasik yang sudah lama ada di Surabaya.']]},
+Malang:{
+ wisata:[['Museum Angkut','Museum transportasi dengan kendaraan dari berbagai zaman dan negara.'],['Kampung Warna-Warni Jodipan','Permukiman tepi sungai yang dicat warna-warni.'],['Jatim Park 2','Kompleks wisata keluarga dengan kebun binatang dan museum satwa di Batu.'],['Coban Rondo','Air terjun di lereng pegunungan, dikelilingi hutan pinus dan taman.'],['Selecta','Taman rekreasi sejuk di Batu dengan kebun bunga dan kolam renang.']],
+ makan:[['Bakso President','Bakso kuah yang terkenal di Malang.'],['Rawon Nguling','Rawon berkuah hitam khas dari Malang.']],
+ nongkrong:[['Alun-Alun Tugu','Alun-alun dengan air mancur dan balai kota di sekitarnya.'],['Jalan Ijen','Boulevard berpohon dengan rumah-rumah kolonial.']],
+ oleh:[['Keripik Tempe Sanan','Sentra keripik tempe dan camilan di Kampung Sanan.'],['Malang Strudel','Kue strudel apel khas Malang.']],
+ jajan:[['Toko Oen Malang','Kedai es krim dan kue bergaya kolonial yang sudah lama berdiri.']]},
+Semarang:{
+ wisata:[['Lawang Sewu','Bekas kantor kereta api kolonial dengan ratusan pintu dan jendela.'],['Kota Lama Semarang','Kawasan bangunan Eropa dengan Gereja Blenduk di tengahnya.'],['Sam Poo Kong','Kelenteng besar yang terkait dengan Laksamana Cheng Ho.'],['Masjid Agung Jawa Tengah','Masjid dengan payung raksasa di halaman dan menara pandang.'],['Brown Canyon','Tebing kapur bekas galian dengan pemandangan mirip ngarai.']],
+ makan:[['Lumpia Gang Lombok','Lumpia khas Semarang di kawasan Pecinan.'],['Soto Bangkong','Soto ayam dengan sate-satean di perempatan Bangkong.']],
+ nongkrong:[['Simpang Lima','Lapangan kota yang ramai dengan jajanan setiap malam.'],['Pasar Semawis','Pasar malam di Pecinan dengan kuliner dan suasana lampion.']],
+ oleh:[['Bandeng Juwana Erlina','Bandeng presto tanpa duri, oleh-oleh khas Semarang.'],['Wingko Babat Cap Kereta Api','Kue kelapa panggang khas Semarang.']],
+ jajan:[['Toko Oen Semarang','Kedai es krim dan kue bergaya kolonial di Jalan Pemuda.']]},
+Medan:{
+ wisata:[['Istana Maimun','Istana Kesultanan Deli dengan arsitektur Melayu, Eropa, dan India.'],['Masjid Raya Al Mashun','Masjid megah berusia lebih dari seabad di pusat kota.'],['Tjong A Fie Mansion','Rumah bersejarah milik saudagar Tionghoa yang kini jadi museum.'],['Gereja Annai Velankanni','Gereja bergaya India yang unik di tengah kota.'],['Bukit Lawang','Pintu masuk hutan Gunung Leuser untuk melihat orangutan, sekitar tiga jam dari Medan.']],
+ kopi:[['Kedai Kopi Phoenam','Kopitiam khas Medan yang populer untuk sarapan dan kopi.']],
+ makan:[['Soto Sinar Pagi','Soto Medan berkuah gurih dengan isi daging atau ayam.']],
+ nongkrong:[['Merdeka Walk','Pusat jajan dan hiburan terbuka di depan Lapangan Merdeka.'],['Kesawan','Jalan tua dengan bangunan kolonial dan kafe.']],
+ oleh:[['Bika Ambon Zulaikha','Bika ambon yang kenyal, oleh-oleh paling dikenal dari Medan.'],['Bolu Meranti','Bolu gulung dengan banyak rasa, selalu ramai pembeli.']],
+ jajan:[['Durian Ucok','Durian dan olahan durian seperti pancake yang terkenal di Medan.']]},
+Makassar:{
+ wisata:[['Fort Rotterdam','Benteng peninggalan Kerajaan Gowa yang kemudian dipakai Belanda.'],['Rammang-Rammang','Hutan batu kapur dan sungai di Maros, sekitar sejam dari Makassar.'],['Pulau Samalona','Pulau kecil dengan pasir putih dan snorkeling, dicapai dengan kapal.'],['Taman Wisata Bantimurung','Air terjun dan penangkaran kupu-kupu di Maros.'],['Masjid 99 Kubah','Masjid berkubah banyak di tepi laut kawasan CPI.']],
+ makan:[['Coto Nusantara','Coto Makassar berkuah kental, dimakan dengan ketupat.'],['Konro Karebosi','Sup iga dan konro bakar khas Makassar.']],
+ nongkrong:[['Pantai Losari','Anjungan tepi laut yang ramai saat senja.'],['CPI Makassar','Kawasan tepi laut hasil reklamasi untuk bersantai.']],
+ oleh:[['Jalan Somba Opu','Deretan toko suvenir, kain sutra, dan makanan khas.']],
+ jajan:[['Pisang Epe Pantai Losari','Pisang bakar pipih dengan saus gula merah di tepi Losari.']]},
+Lombok:{
+ wisata:[['Gili Trawangan','Pulau kecil tanpa kendaraan bermotor, populer untuk snorkeling.'],['Pantai Kuta Mandalika','Pantai berpasir lembut di selatan Lombok.'],['Air Terjun Sendang Gile','Air terjun di kaki Gunung Rinjani.'],['Gunung Rinjani','Gunung berapi tertinggi kedua di Indonesia, favorit para pendaki.'],['Desa Sade','Desa adat suku Sasak dengan rumah tradisional dan tenun.'],['Pantai Pink','Pantai berpasir kemerahan di Lombok Timur.']],
+ makan:[['Ayam Taliwang Irama','Ayam bakar pedas khas Lombok.'],['Sate Rembiga','Sate sapi berbumbu manis pedas dari Rembiga, Mataram.']],
+ nongkrong:[['Pantai Senggigi','Pantai dengan kafe dan restoran untuk menikmati senja.']],
+ oleh:[['Desa Sukarara','Desa penenun songket dan kain tradisional Sasak.']]}
+};
+const H=(n,d)=>[n,d,"",1];
+const EXTRA={
+Bandung:{
+ kopi:[['Two Hands Full Coffee','Salah satu pelopor kopi spesialti di Bandung.'],H('Sudut Pandang Coffee','Kopi dengan pemandangan kota dari ketinggian, enak untuk sore hingga malam.'),H('Bahagia Kopi','Kedai kopi yang sedang hits di kalangan anak muda Bandung.'),H('Kopi Tahura Djuanda','Kedai kopi dekat Taman Hutan Raya Djuanda yang dikenal dari media sosial.')],
+ nongkrong:[H('Kafe D’Pakar','Kafe di dataran tinggi Dago dengan panorama dan udara sejuk.'),H('Tjarani Cafe','Kafe bernuansa pastel dengan banyak sudut foto.')]},
+Yogyakarta:{
+ kopi:[H('Kedai Terang Bintang','Kedai di lantai 2 Pasar Kranggan dengan kopi butter yang viral di TikTok.'),H('COSAN Coffee Shop','Kopi susu yang digemari anak muda Jogja, dekat Tugu.'),H('Kebon Ndalem Coffee & Eatery','Kafe kopi dan makanan di kawasan Tugu Jogja.')],
+ nongkrong:[H('Kawasan Tugu Jogja','Area dengan banyak kafe dan kuliner yang sering muncul di TikTok.'),H('Bento Kopi','Kedai kopi dengan belasan cabang di DIY, ramai untuk nongkrong dan mengerjakan tugas.')]},
+Bali:{
+ kopi:[['Expat. Roasters','Kedai kopi spesialti populer di Seminyak dan Canggu.']],
+ nongkrong:[['Crate Cafe','Kafe sarapan di Canggu yang selalu ramai.'],['The Lawn Canggu','Beach club santai di Canggu dengan suasana tepi pantai.']]},
+Jakarta:{
+ kopi:[['Filosofi Kopi','Kedai kopi ikonik yang terinspirasi novel dan film berjudul sama.'],H('Again Coffee Sound','Kedai kopi di Jalan Melawai, Blok M, dengan menu butter tteok yang lagi viral.'),H('Kopi Tikum','Kedai kopi bergaya industrial yang jadi favorit di Senopati.')],
+ nongkrong:[H('Kemang','Kawasan kafe dan restoran Jakarta Selatan yang lama jadi tongkrongan anak muda.'),H('Warkop Bulungan','Warung kopi yang masuk daftar warkop hits untuk nongkrong.')]},
+Surabaya:{
+ kopi:[['Völks Coffee','Kedai kopi yang sudah lama dikenal di Darmo, dengan espresso dan seduh manual.'],H('Monopole Coffee Lab','Kedai kopi populer di Surabaya yang buka 24 jam.'),H('Historica Coffee & Pastry','Kafe kopi dan pastri di Jalan Sumatera, Gubeng, sejak 2014.'),H('Tropikal Coffee','Kafe yang sering masuk daftar kafe viral di Surabaya.')],
+ nongkrong:[H('Orpheus Listening Bar','Tempat menikmati musik sambil nongkrong, masuk daftar spot hits Surabaya.'),H('Yoi Kona','Kedai kopi dan tongkrongan yang sering direkomendasikan anak muda Surabaya.')]},
+Malang:{
+ kopi:[H('Sejenak Coffee','Kedai kopi tenang dan nyaman yang sering direkomendasikan di Malang.'),H('Tilik Kawan','Kedai kopi untuk nongkrong atau kerja, buka sampai tengah malam.'),H('KON.CO Coffee & Garden','Kafe taman di Sentra Kopi Sudimoro, Mojolangu, cocok untuk nongkrong bareng teman.'),H('Legi Pait','Warung kopi hits di Jalan Pattimura, dekat Stasiun Malang Kotabaru.')],
+ nongkrong:[H('Andhap Asor','Kafe tepi sungai yang viral sebagai tempat berburu senja.'),H('Nogo Keling','Warkop tepi sungai di Tlogomas dengan suasana asri.')]},
+Semarang:{
+ kopi:[H('KOV Koffie','Kafe kopi 24 jam di Jalan Sultan Agung yang sedang hits.'),H('Kopi Susu Bu Lurah','Kedai kopi susu di kawasan Rinjani dengan area outdoor luas.'),H('Semasa Kopi','Kedai kopi bernuansa outdoor yang berawal dari Siranda, Semarang.')],
+ nongkrong:[H('Spiegel Bar & Bistro','Bar dan bistro favorit di Kota Lama Semarang.'),H('Miles Cafe & Eatery','Kafe di Kota Lama yang populer untuk nongkrong anak muda.')]},
+Medan:{
+ kopi:[['Kedai Kopi Apek','Kedai kopi legendaris Medan yang mempertahankan rasa klasik.'],H('Sosmed Coffee House','Kafe dengan desain unik yang sering mengadakan acara.'),H('Thirty Three Coffee','Salah satu kedai kopi hits di Medan.')],
+ nongkrong:[H('Tropical Rooftop','Kafe dengan area rooftop luas penuh tanaman.'),H('Unboss Coffee','Kafe dengan area outdoor luas dan rumah kaca, makin cantik saat malam.'),H('L’Tropico by Haban','Tempat nongkrong ala beach club Bali di Medan.')]},
+Makassar:{
+ kopi:[H('Kopiteori','Kedai kopi di Jalan Beruang, Mamajang, dengan sajian kopi yang sederhana.')],
+ nongkrong:[H('La Buana Cafe & Resto','Kafe bernuansa alam di Jalan Urip Sumoharjo yang viral di media sosial.'),H('Zodiac Cafe','Tempat nongkrong anak muda dengan menu nasi, mi, hingga kopi.')]},
+Lombok:{
+ kopi:[H('Maktal Coffee Bar','Kedai kopi di Cakranegara dengan fokus pada kopi berkualitas dan suasana tenang.')],
+ nongkrong:[H('Roemah Langko','Tempat nongkrong di Ampenan, Mataram, buka dari siang sampai malam.'),H('Kedai Panorama Pantai Tanjung Bias','Kedai dengan pemandangan pantai untuk melepas penat.')]}
+};
+Object.keys(EXTRA).forEach(k=>Object.keys(EXTRA[k]).forEach(c=>{DATA[k][c]=(DATA[k][c]||[]).concat(EXTRA[k][c])}));
+const R=(n,d)=>[n,d,"",2];
+const MORE={
+Bandung:{
+ wisata:[['Saung Angklung Udjo','Pertunjukan angklung dan budaya Sunda yang ramah untuk wisatawan.'],['Museum Konferensi Asia Afrika','Museum sejarah konferensi tahun 1955 di Jalan Asia Afrika.'],['Floating Market Lembang','Wisata kuliner apung dengan taman dan wahana di Lembang.'],['Dusun Bambu','Wisata alam bernuansa pedesaan Sunda dengan restoran dan taman.'],['Orchid Forest Cikole','Hutan pinus dengan jembatan gantung dan taman anggrek di Lembang.'],['Taman Hutan Raya Djuanda','Hutan kota di Dago Pakar untuk jalan santai, dengan gua peninggalan masa lalu.']],
+ kopi:[R('Makmur Jaya Coffee Roasters','Kedai kopi yang pengunjungnya sering antre demi es kopi susu gula aren yang creamy.'),R('One Eighty Coffee','Kedai kopi dekat Gedung Sate dan Lapangan Gasibu yang selalu ramai.'),['Kopi Cantel','Kedai es kopi susu yang masuk daftar kopi susu favorit di Bandung.'],['Mimiti Coffee','Kedai kopi di Jalan Ciliwung, Cihapit, dengan rating tinggi di aplikasi pesan antar.'],['Toko Kopi Lajeng','Kedai kopi yang sering direkomendasikan di Bandung.'],['Daily Routine Coffee','Kedai kopi di kawasan Dago yang sering direkomendasikan.'],['Opi Uchi','Kedai kopi rekomendasi pengguna di Bandung; cek video dan peta untuk detail lokasinya.']],
+ makan:[R('Pandan Wangi','Restoran Sunda yang selalu antre, terutama akhir pekan dan musim liburan.'),R('Bubur Ayam Alkateri','Bubur ayam gurih berkaldu yang ramai saat sarapan.'),R('Bakso Bintang Asia','Bakso berkuah kaldu yang masuk daftar tempat makan viral di Bandung.'),R('Warung Nasi Ma Eha','Warung masakan Sunda rumahan yang selalu ramai pelanggan.'),R('Sate Hadori','Warung sate legendaris sejak 1940-an yang masih ramai.'),H('Rumah Makan Wangi Seruni','Rumah makan hidangan rumahan yang ramai dibicarakan sebagai tempat makan viral 2026.')],
+ jajan:[R('Bien Patisserie','Toko pastri di dalam Pasar Cihapit yang antre sejak pagi.')]},
+Yogyakarta:{
+ makan:[R('Bakmi Jawa Pak Pele','Bakmi Jawa dekat Alun-Alun Utara yang ramai terutama malam hari.'),R('Warung Brongkos Handayani','Brongkos, hidangan khas Jogja mirip rawon, yang jarang sepi.'),R('Sate Ratu','Sate di Condongcatur yang antreannya mengular saat jam makan malam dan akhir pekan.'),R('SGPC Bu Wiryo','Nasi pecel yang ramai saat sarapan dan makan siang.'),['Oseng Mercon Bu Narti','Oseng mercon pedas di sekitar Malioboro.'],['Ayam Bakar Artomoro','Ayam bakar yang viral sekaligus terbilang legendaris di Jogja.']],
+ jajan:[R('Dimsum Seribuan ALKID','Street food viral di Alun-Alun Kidul dengan dimsum seribuan yang antre panjang.')]},
+Surabaya:{
+ makan:[R('Rawon Kalkulator','Rawon yang masuk daftar hidden gem Surabaya yang tak pernah sepi.'),R('Depot Bu Rudy','Terkenal dengan sambalnya, menu andalan nasi udang sambal dan ayam goreng sambal.'),R('Sego Sambel Mak Yeye','Warung nasi sambal yang viral karena selalu ramai.'),R('Sate Klopo Ondomohen Bu Asih','Sate kelapa legendaris yang ramai terutama malam hari.'),R('Nasi Goreng Jancuk','Nasi goreng porsi jumbo yang ramai di malam hari.'),H('Bakso Bal Balan','Bakso yang disebut sebagai kuliner viral di Surabaya.')],
+ nongkrong:[['G Walk Citraland','Kawasan jajan malam di Citraland yang ramai.'],['Pasar Atom','Pasar dan food court yang ramai, populer untuk jajan.']]},
+Jakarta:{
+ makan:[R('Nasi Goreng Kambing Kebon Sirih','Nasi goreng kambing legendaris, ikon kuliner malam Jakarta.'),R('Soto Betawi H. Ma’ruf','Soto Betawi legendaris di sekitar Monas.'),R('Gohyong Cikini','Gohyong viral yang selalu antre panjang.'),R('Opor Susu Legendaris','Opor ayam berkuah susu di Cikini dan Tebet yang antreannya lama.'),R('Ketoprak Marotop','Ketoprak viral di Tanjung Duren dengan bumbu kacang gurih.'),R('Bakso Rusuk Samanhudi','Bakso ikonik yang ramai saat makan siang dan malam.'),['Gado-Gado Bonbin','Gado-gado legendaris sejak 1960 di Jakarta Pusat.']],
+ jajan:[H('Little Salt Bread','Roti garam viral yang ramai di Blok M dan Glodok.'),H('Thankyou Tangyuan','Dessert viral di kawasan Glodok.'),R('Ketan Susu Kemayoran','Ketan susu bakar yang ramai terutama malam hari.'),['Roti Bakar Edi','Roti bakar ikon kuliner malam Jakarta dengan banyak cabang.']]},
+Bali:{
+ makan:[R('Warung Mami','Warung ikan bakar legendaris di Jimbaran dengan antrean panjang.'),['Warung Betutu Liku','Warung ayam betutu legendaris di Ubud sejak 1986.'],H('Bakso Gepeng AA','Lapak bakso di Denpasar yang viral karena antreannya mengular.')]},
+Malang:{
+ makan:[H('Sego Sambel Cak Uut','Nasi sambal viral dengan lauk jumbo, antreannya bisa sangat panjang.'),R('Pecel Kawi','Nasi pecel legendaris yang ramai saat sarapan dan makan siang.'),['Depot Hok Lay','Depot klasik dengan steak, lumpia, dan sop buntut di Jalan Basuki Rahmat.'],['Bakso Kota Cak Man','Bakso dengan banyak varian, berdiri sejak 1980.'],['Warung Sate Gebug','Sate gebug legendaris di Malang.']],
+ jajan:[['Ronde Titoni','Kedai ronde dengan wedang jahe sejak 1948.'],R('Pos Ketan Legenda','Ketan dengan topping keju atau durian di Batu, buka sampai larut malam.')]},
+Semarang:{
+ makan:[R('Tahu Gimbal Pak Edi','Tahu gimbal yang termasuk kuliner paling diburu di Semarang.'),R('Mie Kopyok Pak Dhuwur','Mie kopyok sejak 1970, kadang harus antre meja.'),R('Nasi Ayam Bu Wido','Nasi ayam legendaris yang ramai terutama malam hari.'),['Gulai Kambing Bustaman Pak Sabar','Gulai kambing tanpa santan yang legendaris di dekat Stasiun Tawang.'],['Nasi Koyor Kota Lama','Nasi koyor yang sudah ada sejak 1955.']]},
+Medan:{
+ makan:[R('Sate Memeng','Sate yang dijajakan sejak 1945 dan selalu ramai pembeli.'),R('tsuru tsuru','Kafe populer dengan chicken katsu don dan spaghetti yang selalu ramai.'),['Mie Aceh Titi Bobrok','Mie Aceh legendaris di Medan.'],['Mie Kangkung Belacan Ahai','Mie kangkung belacan legendaris sejak 1976.'],['Bakso Amat','Bakso legendaris di Medan sejak 1968.'],['Lontong Kak Lin','Tempat sarapan populer dengan porsi mengenyangkan.']]},
+Makassar:{
+ makan:[R('Mie Titi','Mi kering Makassar yang paling mudah ditemui karena banyak cabangnya.'),R('Mie Awa','Warung mi kering sederhana yang selalu ramai, siap antre untuk makan di tempat.'),['Pallubasa Serigala','Pallubasa di Jalan Serigala, Mamajang, yang ramai penggemar.']],
+ nongkrong:[['The Beach Stones Cafe','Kafe tepi laut yang masuk daftar tempat makan dengan view laut di Makassar.']],
+ jajan:[['Songkolo Bagadang Antang','Songkolo, jajanan khas Makassar yang bisa dipesan lewat aplikasi.']]},
+Lombok:{
+ makan:[['Nasi Balap Puyung Inaq Esun','Nasi balap khas Lombok yang jadi buruan wisatawan.'],['Soto Yugisah','Soto di Rembiga dengan berugak di halamannya.'],['Rumah Makan Masteng','Bebalung (sup tulang) dan sate berbahan daging kuda, ada sejak 1980-an.']]}
+};
+Object.keys(MORE).forEach(k=>Object.keys(MORE[k]).forEach(c=>{DATA[k][c]=(DATA[k][c]||[]).concat(MORE[k][c])}));
+const ALIAS={jogja:"Yogyakarta",yogya:"Yogyakarta",jogjakarta:"Yogyakarta",ubud:"Bali",kuta:"Bali",seminyak:"Bali",denpasar:"Bali",dki:"Jakarta",sby:"Surabaya",batu:"Malang",smg:"Semarang","ujung pandang":"Makassar",mataram:"Lombok",senggigi:"Lombok",gili:"Lombok"};
+const tt=q=>"https://www.tiktok.com/search?q="+encodeURIComponent(q);
+const mp=q=>"https://www.google.com/maps/search/"+encodeURIComponent(q);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const $=id=>document.getElementById(id);
+let region="",key=null,cat="semua";
+
+$("kota").innerHTML=Object.keys(DATA).map(k=>'<option value="'+k+'">').join("");
+$("try").innerHTML='Coba: '+Object.keys(DATA).map(k=>'<button data-k="'+k+'">'+k+'</button>').join("");
+
+function find(q){
+  const n=q.toLowerCase().trim();
+  if(ALIAS[n])return ALIAS[n];
+  return Object.keys(DATA).find(k=>k.toLowerCase()===n||k.toLowerCase().includes(n)||n.includes(k.toLowerCase()))||null;
+}
+function search(){
+  const q=$("q").value.trim();
+  if(!q)return;
+  key=find(q);
+  region=key||q.replace(/\b\w/g,c=>c.toUpperCase());
+  cat="semua";
+  render();
+}
+function items(){
+  const list=[];
+  Object.keys(CATS).forEach(c=>{
+    if(cat!=="semua"&&cat!==c)return;
+    if(key){
+      (DATA[key][c]||[]).forEach(([n,d,v,h])=>list.push({c,n,d,h,v:v||tt(n+" "+key),m:mp(n+" "+key)}));
+    }else{
+      const l=CATS[c].toLowerCase();
+      list.push({c,n:CATS[c]+" di "+region,d:"Belum ada data pilihan untuk daerah ini. Buka hasil pencarian video dan peta untuk melihat rekomendasi.",v:tt("rekomendasi "+l+" di "+region),m:mp(l+" di "+region)});
+    }
+  });
+  return list;
+}
+function render(){
+  const chips=[["semua","Semua"]].concat(Object.entries(CATS).filter(([k])=>!key||DATA[key][k])).map(([k,l])=>'<button class="chip" data-c="'+k+'" aria-pressed="'+(cat===k)+'">'+l+'</button>').join("");
+  const note=key?'':'<div class="note">Data pilihan untuk <b>'+esc(region)+'</b> belum tersedia. Tautan di bawah membuka pencarian video dan peta untuk daerah itu.</div>';
+  const cards=items().map(i=>'<div class="item" style="--k:var(--c-'+i.c+')"><div class="bar"></div><div><span class="tag">'+CATS[i.c]+'</span>'+(i.h?'<span class="hot">'+(i.h==2?'Selalu ramai':'Lagi hits')+'</span>':'')+'<h3>'+esc(i.n)+'</h3><p>'+esc(i.d)+'</p><div class="links"><a class="v" href="'+i.v+'" target="_blank" rel="noopener noreferrer">Tonton di TikTok</a><a href="'+i.m+'" target="_blank" rel="noopener noreferrer">Lihat di peta</a></div></div></div>').join("");
+  $("out").innerHTML='<h2>Rekomendasi di '+esc(region)+'</h2><div class="chips">'+chips+'</div>'+note+cards;
+}
+$("go").onclick=search;
+$("q").addEventListener("keydown",e=>{if(e.key==="Enter")search()});
+$("try").addEventListener("click",e=>{const k=e.target.dataset.k;if(k){$("q").value=k;search()}});
+$("out").addEventListener("click",e=>{const c=e.target.dataset.c;if(c){cat=c;render()}});
+</script>
+</body>
+</html>
